@@ -40,12 +40,12 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({ code, lang
 
     // 1. VBA コメント (シングルクォートから行末) の退避
     escaped = escaped.replace(/('[^\r\n]*)/g, (match) => {
-      return addToken(`<span class="text-emerald-400 font-normal italic drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`);
+      return addToken(`<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-emerald-400 font-normal italic">${match}</span>`);
     });
 
     // 2. ダブルクォーテーションで囲まれた文字列 ("...") の退避
     escaped = escaped.replace(/("[^"\r\n]*")/g, (match) => {
-      return addToken(`<span class="text-amber-300 font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`);
+      return addToken(`<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-amber-300 font-medium">${match}</span>`);
     });
 
     // 3. キーワードハイライト (単語境界 \\b を使用)
@@ -71,22 +71,22 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({ code, lang
     // キーワード、オブジェクト、型
     const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi');
     escaped = escaped.replace(keywordRegex, (match) => {
-      return `<span class="text-sky-300 font-bold drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`;
+      return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-sky-300 font-bold">${match}</span>`;
     });
 
     const objRegex = new RegExp(`\\b(${excelObjects.join('|')})\\b`, 'gi');
     escaped = escaped.replace(objRegex, (match) => {
-      return `<span class="text-fuchsia-300 font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`;
+      return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-fuchsia-300 font-medium">${match}</span>`;
     });
 
     const typeRegex = new RegExp(`\\b(${types.join('|')})\\b`, 'g');
     escaped = escaped.replace(typeRegex, (match) => {
-      return `<span class="text-teal-300 font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`;
+      return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-teal-300 font-medium">${match}</span>`;
     });
 
     // 4. 数値リテラルのハイライト
     escaped = escaped.replace(/\b(\d+)\b/g, (match) => {
-      return `<span class="text-indigo-300 font-mono drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`;
+      return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-indigo-300 font-mono">${match}</span>`;
     });
 
     // 退避したコメント・文字列を復元
@@ -115,27 +115,27 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({ code, lang
 
     // 1. HTMLコメント ( &lt;!-- [...] --&gt; ) の退避
     escaped = escaped.replace(/(&lt;!--[\s\S]*?--&gt;)/g, (match) => {
-      return addToken(`<span class="text-emerald-400 italic drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`);
+      return addToken(`<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-emerald-400 italic">${match}</span>`);
     });
 
     // 2. ダブルクォーテーションで囲まれた文字列 ("...") の退避
     escaped = escaped.replace(/("[^"\r\n]*")/g, (match) => {
-      return addToken(`<span class="text-amber-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`);
+      return addToken(`<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-amber-300">${match}</span>`);
     });
 
     // 3. シングルクォーテーションで囲まれた文字列 ('...') の退避
     escaped = escaped.replace(/('[^'\r\n]*')/g, (match) => {
-      return addToken(`<span class="text-amber-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`);
+      return addToken(`<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-amber-300">${match}</span>`);
     });
 
     // 4. HTMLのタグ (&lt; / &gt;で囲まれている部分) の基本カラー、および属性
     // まず開始タグと終了タグのキーワード部分を調整
     escaped = escaped.replace(/(&lt;\/?[a-zA-Z0-9:-]+)/g, (match) => {
-      return `<span class="text-pink-400 font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`;
+      return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-pink-400 font-medium">${match}</span>`;
     });
 
     escaped = escaped.replace(/(&gt;)/g, (match) => {
-      return `<span class="text-pink-400 font-semibold drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`;
+      return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-pink-400 font-semibold">${match}</span>`;
     });
 
     // 5. styleやonclickなどの属性名、変数の色
@@ -145,7 +145,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({ code, lang
     attributes.forEach((attr) => {
       const attrRegex = new RegExp(`\\b(${attr})=`, 'gi');
       escaped = escaped.replace(attrRegex, (match, p1) => {
-        return `<span class="text-violet-300 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${p1}</span>=`;
+        return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-violet-300">${p1}</span>=`;
       });
     });
 
@@ -156,7 +156,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({ code, lang
     jsKeywords.forEach((kw) => {
       const kwRegex = new RegExp(`\\b(${kw})\\b`, 'g');
       escaped = escaped.replace(kwRegex, (match) => {
-        return `<span class="text-sky-300 font-bold drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">${match}</span>`;
+        return `<span style="text-shadow: 0 1px 2px rgba(0,0,0,0.9);" class="text-sky-300 font-bold">${match}</span>`;
       });
     });
 
