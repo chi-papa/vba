@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;750&family=JetBrains+Mono:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;605;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* スクロールバーと洗練されたセレクションカラー */
+::selection {
+  background-color: rgba(26, 26, 26, 0.08);
+  color: #1a1a1a;
+}
+
+.dark ::selection {
+  background-color: rgba(245, 245, 245, 0.12);
+  color: #fafafa;
+}
+
+/* 
+  未来的なインターフェース用：
+  アイボリー＆グレースケールを極限まで洗練させるドットグリッド＆ライン
+*/
+.bg-tech-grid-light {
+  background-color: #FBF9F6;
+  background-image: 
+    radial-gradient(rgba(26, 26, 26, 0.035) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
+.bg-tech-grid-dark {
+  background-color: #0d0d0d;
+  background-image: 
+    radial-gradient(rgba(255, 255, 255, 0.025) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
+/* 微細なサイバーホバーグロー */
+.interact-glow {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.interact-glow:hover {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.03);
+  border-color: rgba(26, 26, 26, 0.4);
+}
+
+.dark .interact-glow:hover {
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* 微弱な点滅・呼吸するインジケーター（近未来的） */
+@keyframes techPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.animate-tech-pulse {
+  animation: techPulse 3s infinite ease-in-out;
+}
+

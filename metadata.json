@@ -1,0 +1,6 @@
+{
+  "name": "VBA & HTML Code Portal",
+  "description": "VBA（Excel/Accessなど）の便利関数・業務効率化サンプルコード集と、セキュアローカルメモ帳HTMLを合わせて紹介・検索・コピー・ハイライト表示できるポータルサイトです。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
