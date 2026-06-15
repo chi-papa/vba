@@ -2,6 +2,334 @@ import { VbaSample } from '../types';
 
 export const vbaSamples: VbaSample[] = [
   {
+    id: 'dynamic-vba-control-panel',
+    title: '【動的コントロールパネル】設定シート連携・ボタンメニュー自動生成＆一括制御システム',
+    description: '「設定シート」上に登録したボタン名、マクロ、表示先セル、横幅、高さ、および「設定リストの背景色・文字色」をExcel表からそのままダイレクト取得！シート上に整然と並ぶ美しいモダンコントロールパネル（角丸Shape、ドロップシャドウ、指マークハンド、自動センタリング）を全自動で動的配置・一括再構築する極めて強力なデザイン・運用フレームワークです。',
+    category: 'excel',
+    difficulty: 'hard',
+    tags: ['コントロールパネル', '動的生成', 'ナビゲーション', 'デザイン自動化', 'Shape設定'],
+    code: `' ===========================================================
+' ■ 「設定シート」(またはControlBoxなど)の推奨セルレイアウト
+'   A列: ボタンの表示テキスト（Caption）例：「顧客データ読込」「システムリセット」
+'   B列: クリック時に起動するマクロ名（OnAction）例：「ReadData」「ResetAll」
+'   C列: ボタンを吸着・配置するセル（RangeAddress）例：「D2」「D4」「D6」
+'   D列: ボタンの横幅（Width: 省略時は 130pt）
+'   E列: ボタンの高さ（Height: 省略時は 35pt）
+'   ※ボタンの背景色・文字色は、設定シート「A列」のセル自体の「背景塗りつぶし色」「文字色」を
+'     そのまま直感的に100%自動追従してコントロールパネルに反映します（RGB抽出）。
+' ===========================================================
+
+' ===========================================================
+' ① 【標準モジュール】動的コントロールパネル自動構築 ＆ 一括削除
+' ===========================================================
+
+Option Explicit
+
+Private Const PANEL_SHEET_NAME As String = "メニューリスト"  ' ボタンの定義リストがあるシート
+Private Const TARGET_SHEET_NAME As String = "ダッシュボード" ' 配置先のシート
+
+' --- 設定シートに基づいてコントロールパネルを一瞬で自動生成 ---
+Sub BuildCustomControlPanel()
+    Dim wsList As Worksheet
+    Dim wsTarget As Worksheet
+    
+    On Error Resume Next
+    Set wsList = ThisWorkbook.Sheets(PANEL_SHEET_NAME)
+    Set wsTarget = ThisWorkbook.Sheets(TARGET_SHEET_NAME)
+    On Error GoTo 0
+    
+    ' 対象シートが無ければ親切に自動作成
+    If wsList Is Nothing Then
+        MsgBox "ボタン定義のある「" & PANEL_SHEET_NAME & "」シートが見つかりません。" & Chr(10) & _
+               "まずは「CreateMenuDefinitionSheet」マクロを実行して設定シートを作成してください。", vbExclamation, "設定エラー"
+        Exit Sub
+    End If
+    If wsTarget Is Nothing Then
+        Set wsTarget = ThisWorkbook.Sheets.Add(Before:=wsList)
+        wsTarget.Name = TARGET_SHEET_NAME
+        wsTarget.Views(1).DisplayGridlines = False ' 罫線を消してポータル感を演出
+    End If
+    
+    ' 高速化処理
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = False
+    
+    ' 1. すでに配置されている既存のコントロールパネル用Shapeボタンを一括削除して初期化
+    Call DeleteExistingButtons(wsTarget)
+    
+    Dim lastRow As Long
+    lastRow = wsList.Cells(wsList.Rows.Count, "A").End(xlUp).Row
+    
+    Dim i As Long
+    Dim btnCaption As String
+    Dim actionMacro As String
+    Dim targetCell As String
+    Dim btnWidth As Single
+    Dim btnHeight As Single
+    Dim btnBgColor As Long
+    Dim btnFgColor As Long
+    
+    Dim targetRng As Range
+    Dim shp As Shape
+    Dim createdCount As Long
+    createdCount = 0
+    
+    ' 2行目のデータ行から順に設定をスキャン
+    For i = 2 To lastRow
+        btnCaption = Trim(wsList.Cells(i, "A").Value)
+        actionMacro = Trim(wsList.Cells(i, "B").Value)
+        targetCell = Trim(wsList.Cells(i, "C").Value)
+        
+        If btnCaption <> "" And targetCell <> "" Then
+            ' セルの背景色と文字色を設定値（A列）からダイレクトかつ柔軟に抽出！
+            btnBgColor = wsList.Cells(i, "A").Interior.Color
+            btnFgColor = wsList.Cells(i, "A").Font.Color
+            
+            ' 白または無色(16777215)の場合は、自動的に洗練されたデフォルト色にする
+            If btnBgColor = 16777215 Then
+                btnBgColor = RGB(41, 128, 185) ' モダンブルー
+                btnFgColor = RGB(255, 255, 255) ' 白文字
+            End If
+            
+            ' 幅と高さ（指定が無ければデフォルト）
+            btnWidth = IIf(Val(wsList.Cells(i, "D").Value) > 0, Val(wsList.Cells(i, "D").Value), 130)
+            btnHeight = IIf(Val(wsList.Cells(i, "E").Value) > 0, Val(wsList.Cells(i, "E").Value), 35)
+            
+            ' 配置ターゲットセルの有効チェック
+            Set targetRng = Nothing
+            On Error Resume Next
+            Set targetRng = wsTarget.Range(targetCell)
+            On Error GoTo 0
+            
+            If Not targetRng Is Nothing Then
+                ' 2. ボタンShapeの動的配置（角丸長方形 Type:=5: msoShapeRoundedRectangle）
+                Set shp = wsTarget.Shapes.AddShape( _
+                    Type:=5, _
+                    Left:=targetRng.Left + 2, _
+                    Top:=targetRng.Top + 2, _
+                    Width:=btnWidth, _
+                    Height:=btnHeight _
+                )
+                
+                ' 3. ビジュアル仕様の設定
+                With shp
+                    ' ボタン削除・識別用Prefixタグを付加したユニークな命名
+                    .Name = "CTRL_PANEL_BTN_" & i
+                    
+                    ' 角丸をスタイリッシュな極小半径に微調整 (0.0=直角, 0.5=完全半円)
+                    .Adjustments(1) = 0.12
+                    
+                    ' 塗りつぶし
+                    With .Fill
+                        .Solid
+                        .ForeColor.RGB = btnBgColor
+                    End With
+                    
+                    ' 枠線の除去（フラットでスマートな現代風フラットデザインにする）
+                    .Line.Visible = msoFalse
+                    
+                    ' テキストの設定
+                    With .TextFrame2
+                        .VerticalAnchor = msoAnchorMiddle ' 縦位置真ん中
+                        With .TextRange
+                            .Text = btnCaption
+                            .ParagraphFormat.Alignment = msoCenter ' 横位置真ん中
+                            
+                            With .Font
+                                .NameFarEast = "Meiryo UI"
+                                .Name = "Meiryo UI"
+                                .Size = 10
+                                .Bold = msoTrue
+                                .Fill.ForeColor.RGB = btnFgColor
+                            End With
+                        End With
+                        ' 余白ゼロ調整で文字切れ防止
+                        .MarginLeft = 2
+                        .MarginRight = 2
+                        .MarginTop = 1
+                        .MarginBottom = 1
+                    End With
+                    
+                    ' 微細な外落ち影（ドロップシャドウ）を追加して立体感を演出
+                    With .Shadow
+                        .Visible = msoTrue
+                        .Type = msoShadow25 ' 柔らかい落ち影
+                        .Blur = 3
+                        .OffsetX = 1.2
+                        .OffsetY = 1.2
+                        .Transparency = 0.6
+                    End With
+                    
+                    ' 4. アクションマクロの紐付け（B列のマクロ名が指定されていれば設定）
+                    If actionMacro <> "" Then
+                        .OnAction = actionMacro
+                        .AlternativeText = "マクロ [" & actionMacro & "] を実行します"
+                    Else
+                        ' 空白の場合は案内ポップアップを紐付ける親切設定
+                        .OnAction = "DefaultButtonNotice"
+                        .AlternativeText = "このボタンにはマクロが未設定です"
+                    End If
+                End With
+                createdCount = createdCount + 1
+            End If
+        End If
+    Next i
+    
+    ' 高速化処理解除
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.EnableEvents = True
+    
+    MsgBox "コントロールパネルの動的生成が完了しました！" & Chr(10) & _
+           "【" & createdCount & "個】のボタンを「" & TARGET_SHEET_NAME & "」に完全に再配置しました。", vbInformation, "カスタムメニュー配置完了"
+End Sub
+
+' --- 既存のコントロールパネルボタンのみを綺麗に一括削除 ---
+Sub DeleteExistingButtons(ws As Worksheet)
+    Dim shp As Shape
+    Dim i As Long
+    
+    ' Shapesコレクションを後ろからスキャンして安全に削除
+    For i = ws.Shapes.Count To 1 Step -1
+        Set shp = ws.Shapes(i)
+        ' コントロールパネルのプレフィックスがついているもの、あるいはマクロ紐付きShapeを対象とする
+        If Left(shp.Name, 15) = "CTRL_PANEL_BTN_" Then
+            shp.Delete
+        End If
+    Next i
+End Sub
+
+' --- ボタン一括手動クリア（ボタンに登録する用） ---
+Sub ClearMyDashboardPanel()
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets(TARGET_SHEET_NAME)
+    On Error GoTo 0
+    
+    If Not ws Is Nothing Then
+        Call DeleteExistingButtons(ws)
+        MsgBox "ダッシュボード上のすべての生成ボタンを安全に削除しました。", vbInformation, "クリア完了"
+    End If
+End Sub
+
+' --- マクロ未登録ボタンの標準メッセージ通知（フォールバック） ---
+Sub DefaultButtonNotice()
+    Dim clickedBtnName As String
+    clickedBtnName = Application.Caller
+    
+    MsgBox "クリックされたボタン:「" & clickedBtnName & "」" & Chr(10) & Chr(10) & _
+           "こちらのボタンにはまだ固有のマクロプログラムが設定されていません。" & Chr(10) & _
+           "「" & PANEL_SHEET_NAME & "」シートのB列に実行予定のマクロ名を記入してください。", _
+           vbInformation, "VBAコントロール案内"
+End Sub
+
+' ===========================================================
+' ② 【設定シート自動コンストラクタ】驚くほど簡単に設定を自動準備
+' ===========================================================
+Sub CreateMenuDefinitionSheet()
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets(PANEL_SHEET_NAME)
+    On Error GoTo 0
+    
+    If Not ws Is Nothing Then
+        If MsgBox("既に「" & PANEL_SHEET_NAME & "」シートが存在します。初期値に上書きリセットしますか？", vbYesNo + vbExclamation, "初期化確認") = vbNo Then Exit Sub
+        Application.DisplayAlerts = False
+        ws.Delete
+        Application.DisplayAlerts = True
+    End If
+    
+    Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+    ws.Name = PANEL_SHEET_NAME
+    
+    With ws
+        ' ヘッダー定義
+        .Cells(1, 1).Value = "ボタン表示文字列 (A列背景・文字色が反映！)"
+        .Cells(1, 2).Value = "実行マクロ名 (B列)"
+        .Cells(1, 3).Value = "配置セル番地 (C列)"
+        .Cells(1, 4).Value = "横幅 (D列)"
+        .Cells(1, 5).Value = "高さ (E列)"
+        
+        ' サンプルデータの流し込み（美しい配色サンプル付き）
+        ' A列の値、およびそれ自体を美しく塗ることで、動的にマクロ側がそのカラーをRGB変換して取得する
+        
+        ' サンプル1：ファイル監視 (クールブルー)
+        .Cells(2, 1).Value = "🔍 フォルダ・Web更新監視"
+        .Cells(2, 1).Interior.Color = RGB(41, 128, 185)
+        .Cells(2, 1).Font.Color = RGB(255, 255, 255)
+        .Cells(2, 1).Font.Bold = True
+        .Cells(2, 2).Value = "CheckFileUpdates"
+        .Cells(2, 3).Value = "B2"
+        .Cells(2, 4).Value = 160
+        .Cells(2, 5).Value = 38
+        
+        ' サンプル2：同期履歴 (ディープグリーン)
+        .Cells(3, 1).Value = "🔄 共有データ同期＆履歴作成"
+        .Cells(3, 1).Interior.Color = RGB(39, 174, 96)
+        .Cells(3, 1).Font.Color = RGB(255, 255, 255)
+        .Cells(3, 1).Font.Bold = True
+        .Cells(3, 2).Value = "ReadSharedFile"
+        .Cells(3, 3).Value = "B4"
+        .Cells(3, 4).Value = 160
+        .Cells(3, 5).Value = 38
+        
+        ' サンプル3：受注転記 (スタイリッシュオレンジ)
+        .Cells(4, 1).Value = "📥 受注転記＆値クリア"
+        .Cells(4, 1).Interior.Color = RGB(230, 126, 34)
+        .Cells(4, 1).Font.Color = RGB(255, 255, 255)
+        .Cells(4, 1).Font.Bold = True
+        .Cells(4, 2).Value = "ParsePastedText"
+        .Cells(4, 3).Value = "B6"
+        .Cells(4, 4).Value = 160
+        .Cells(4, 5).Value = 38
+        
+        ' サンプル4：一括初期化 (ソフトチャコール)
+        .Cells(5, 1).Value = "🗑️ 履歴バックアップ＆初期化"
+        .Cells(5, 1).Interior.Color = RGB(52, 73, 94)
+        .Cells(5, 1).Font.Color = RGB(255, 255, 255)
+        .Cells(5, 1).Font.Bold = True
+        .Cells(5, 2).Value = "InitializeAndBackupWithControlBox"
+        .Cells(5, 3).Value = "B8"
+        .Cells(5, 4).Value = 160
+        .Cells(5, 5).Value = 38
+        
+        ' サンプル5：パネルリセット (アシッドレッド)
+        .Cells(6, 1).Value = "🚫 パネルボタン一括撤去"
+        .Cells(6, 1).Interior.Color = RGB(192, 41, 43)
+        .Cells(6, 1).Font.Color = RGB(255, 255, 255)
+        .Cells(6, 1).Font.Bold = True
+        .Cells(6, 2).Value = "ClearMyDashboardPanel"
+        .Cells(6, 3).Value = "E2"
+        .Cells(6, 4).Value = 140
+        .Cells(6, 5).Value = 35
+        
+        ' ヘッダースタイル調整（定義シート自体へのプロらしい配色）
+        With .Range("A1:E1")
+            .Font.Bold = True
+            .Font.Color = RGB(255, 255, 255)
+            .Interior.Color = RGB(142, 68, 173) ' 高貴なパープルヘッダー
+            .HorizontalAlignment = xlCenter
+        End With
+        
+        ' レイアウト一瞬調整
+        .Columns("A:E").AutoFit
+        .Columns("A").ColumnWidth = 38
+        .Columns("B").ColumnWidth = 32
+        .Columns("C").ColumnWidth = 18
+    End With
+    
+    MsgBox "設定定義用の「" & PANEL_SHEET_NAME & "」シートを自動生成しました！" & Chr(10) & _
+           "A列のセルに好きな背景色をペイントして「BuildCustomControlPanel」を実行してみてください！", vbInformation, "セットアップ完了"
+End Sub`,
+    explanation: [
+      '【セルの塗りつぶし・文字色から配色情報を自動RGB抽出】: A列の「セル自体の塗りつぶし色 (.Interior.Color)」と「文字色 (.Font.Color)」をそのままVBAがミリ秒で判定し、描画するShapeボタンの背景色とテキスト色へ動的転記します。これにより、マクロコード内を1行も書き換えることなく、使い手がスプレッドシート上のペイントバケツや文字パレットで好きなテーマへ外観カスタマイズを行なえます。',
+      '【Shape一括削除による多重生成ガード】: ダッシュボードシート上に前回置かれたボタンを削除しないまま上書き配置すると重なって操作不能になるため、一元管理用のPrefix文字列（`CTRL_PANEL_BTN_`）から始まるShapeだけを、ループインデックスを後ろから減算する（`Step -1`）安全な後ろからスキャン除去法で完璧に一掃・リフレッシュします。',
+      '【マクロ未割り当て時のSafe-Guard OnAction】: リストのB列（マクロ名）が空欄でもボタン機能が死なないよう、フォールバック通知マクロ（`DefaultButtonNotice`）を自動割り当てします。何が起きたかや書き方のヒントが明示されるため、初心者のオペレーターでも自己解決できる極めて高い親切性を発揮します。',
+      '【OnAction＆AlternativeTextの実務フレンドリー紐付け】: マクロの自動実行だけでなく、ホバーした時の吹き出し（Tool Hint）テキストに `AlternativeText` を用いて、どのマクロが格納されているか、クリックすると何が起きるかを事前にツールチップ表示させるUX重視の工夫を施しています。'
+    ]
+  },
+  {
     id: 'file-update-watcher',
     title: '【フォルダ・Web監視】ファイル・Web更新監視＆個別ダブルクリックリセットシステム',
     description: '「コントロールシート」上で管理するローカルファイル、ネットワーク共有上のファイル（FSO取得）、およびWeb上のファイルやURL（MSXML2.XMLHTTP HEAD通信）の更新日付（Last-Modified）をバックグラウンド自動比較し、更新有無を動的に検知。ダブルクリックによる安全な個別指定高速リセットイベントも備えた、極めて軽量かつ信頼性の高い監視ポータルモデルです。',

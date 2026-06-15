@@ -4,6 +4,8 @@ import { VbaCodeCard } from './components/VbaCodeCard';
 import { HtmlViewSection } from './components/HtmlViewSection';
 import { VbaLabSection } from './components/VbaLabSection';
 import { VbaPaletteSection } from './components/VbaPaletteSection';
+import { VbaButtonFormatter } from './components/VbaButtonFormatter';
+import { VbaExporter } from './components/VbaExporter';
 import { 
   Sparkles, 
   Search, 
@@ -20,12 +22,13 @@ import {
   ChevronRight, 
   Database,
   Cpu,
-  Layout
+  Layout,
+  Palette
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState<'vba' | 'vba-lab' | 'html' | 'palette'>('vba');
+  const [activeSection, setActiveSection] = useState<'vba' | 'vba-lab' | 'html' | 'palette' | 'formatter'>('vba');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
@@ -179,6 +182,20 @@ export default function App() {
             </button>
             <button
               onClick={() => {
+                setActiveSection('formatter');
+                setSearchQuery('');
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeSection === 'formatter'
+                  ? 'bg-stone-950 text-white dark:bg-[#FAF7F2] dark:text-stone-950 shadow-sm font-black'
+                  : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
+              }`}
+            >
+              <Palette className="w-3.5 h-3.5" />
+              <span>VBAボタン書式</span>
+            </button>
+            <button
+              onClick={() => {
                 setActiveSection('html');
                 setSearchQuery('');
               }}
@@ -293,6 +310,18 @@ export default function App() {
                   最前面で浮遊する、超高機能フローティングパレット VBA
                 </span>
               </h2>
+            ) : activeSection === 'formatter' ? (
+              <h2 className="leading-tight max-w-4xl mx-auto select-none">
+                <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-stone-500 dark:text-stone-400 block mb-3">
+                  [ INTERACTIVE_BUTTON_FORMATTER ]
+                </span>
+                <span className="text-3xl sm:text-4xl md:text-5.5xl font-black tracking-tighter text-stone-950 dark:text-white font-display block leading-none">
+                  ボタンスタイリングを数値化
+                </span>
+                <span className="text-2xl sm:text-3xl md:text-4.2xl font-light tracking-tight text-stone-600 dark:text-stone-300 font-display block mt-1.5 font-sans">
+                  クリック、サイズ、配置。モダンな高機能VBAボタン形状設計ツール
+                </span>
+              </h2>
             ) : (
               <h2 className="leading-tight max-w-4xl mx-auto select-none">
                 <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-stone-500 dark:text-stone-400 block mb-3">
@@ -311,6 +340,7 @@ export default function App() {
               {activeSection === 'vba' && '非同期的な描画カット、厳密な型定義、安全なオブジェクト解放。企業の制約された環境でも、そのままコピペして最高のスピードを叩き出せるライブラリ。'}
               {activeSection === 'vba-lab' && '実際に自分のコードを評価し、ボトルネックを特定。さらにボタン一つでエラーに強いテンプレート自動生成、業務の劇的な時間・費用削減シミュレーションを行なえます。'}
               {activeSection === 'palette' && 'モーダレスフォーム機能(UserForm)をフル活用。ドラッグ操作、動的な設定シートからのボタン展開、複数バグを完璧にケアした安心設計の一大モジュール一式。'}
+              {activeSection === 'formatter' && 'ボタンの寸法(pt)・角丸・影・配色・フォントファミリを完全にプレビュー制御。UserForm用・シート設置形シェイプ用それぞれのVBAプロパティ変換コードをリアルタイム設計します。'}
               {activeSection === 'html' && 'サーバー連携、外部APIを一切必要としない究極のローカル駆動。完璧な親子ツリー、スマート開閉フォルダー、堅牢なJSONエクスポート機能をご体験ください。'}
             </p>
           </div>
@@ -461,6 +491,8 @@ export default function App() {
 
               </div>
 
+              <VbaExporter filteredSamples={filteredVbaSamples} allSamples={vbaSamples} />
+
               {/* 便利なVBA豆知識 - 究極のミニマル・インフォメーション */}
               <div className="p-5 rounded-2xl border border-stone-250/60 dark:border-stone-900/80 bg-white/50 dark:bg-[#121212]/85 text-stone-850 dark:text-stone-200 shadow-sm space-y-3 hidden lg:block backdrop-blur-md interact-glow">
                 <div className="flex items-center gap-1 text-stone-900 dark:text-white font-mono text-[10px]">
@@ -565,6 +597,17 @@ export default function App() {
             transition={{ duration: 0.3 }}
           >
             <VbaPaletteSection />
+          </motion.div>
+        )}
+
+        {/* === SECTION 5: VBAボタンフォーマッター === */}
+        {activeSection === 'formatter' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <VbaButtonFormatter />
           </motion.div>
         )}
 
