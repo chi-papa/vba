@@ -2,6 +2,189 @@ import { VbaSample } from '../types';
 
 export const vbaSamples: VbaSample[] = [
   {
+    id: 'file-update-watcher',
+    title: '【フォルダ・Web監視】ファイル・Web更新監視＆個別ダブルクリックリセットシステム',
+    description: '「コントロールシート」上で管理するローカルファイル、ネットワーク共有上のファイル（FSO取得）、およびWeb上のファイルやURL（MSXML2.XMLHTTP HEAD通信）の更新日付（Last-Modified）をバックグラウンド自動比較し、更新有無を動的に検知。ダブルクリックによる安全な個別指定高速リセットイベントも備えた、極めて軽量かつ信頼性の高い監視ポータルモデルです。',
+    category: 'file',
+    difficulty: 'medium',
+    tags: ['更新監視', 'FSO', 'XMLHTTP', '監視システム', 'イベント処理'],
+    code: `' ===========================================================
+' ■ 「コントロールシート」の基本設計・セルレイアウト
+'   A列: 監視対象の名前 (例: 顧客リスト, Webサイト等)
+'   B列: URL（httpから始まる）または ローカル/共有フォルダパス
+'   C列: ステータス（1=更新あり, 0=未更新/監視中, エラー, 空白=リセット）
+'   D列: 個別リセット（「ダブルクリックでリセット」などの案内文字列）
+'   E列: 前回更新日時（自動で記録。E列非表示でもマクロは動作可能）
+' ===========================================================
+
+' ===========================================================
+' ① 【標準モジュール】メイン更新チェック ＆ 全体一括リセット
+' ===========================================================
+
+' --- メインの更新チェックマクロ ---
+Sub CheckFileUpdates()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("コントロールシート")
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Dim http As Object
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    
+    Dim i As Long
+    Dim targetPath As String
+    Dim currentStatus As Variant
+    Dim lastModified As String
+    Dim storedDate As Variant
+    
+    ' 2行目から最終行まで順番にチェック
+    For i = 2 To lastRow
+        targetPath = ws.Cells(i, "B").Value
+        storedDate = ws.Cells(i, "E").Value
+        currentStatus = ws.Cells(i, "C").Value
+        
+        If targetPath <> "" Then
+            lastModified = ""
+            
+            ' 1. ファイルの種類に応じて更新日時を取得
+            If Left(targetPath, 4) = "http" Then
+                ' 【Web上のファイル・URLの場合】
+                On Error Resume Next
+                http.Open "HEAD", targetPath, False
+                http.send
+                If http.Status = 200 Then
+                    lastModified = http.getResponseHeader("Last-Modified")
+                End If
+                On Error GoTo 0
+            Else
+                ' 【ローカルファイル・共有フォルダの場合】
+                If fso.FileExists(targetPath) Then
+                    lastModified = fso.GetFile(targetPath).DateLastModified
+                End If
+            End If
+            
+            ' 2. 日時の比較とステータス更新
+            If lastModified <> "" Then
+                If IsEmpty(storedDate) Or storedDate = "" Then
+                    ' 初回は日時だけを記憶し、未チェック状態（0）にする
+                    ws.Cells(i, "E").Value = lastModified
+                    If currentStatus = "" Then ws.Cells(i, "C").Value = 0
+                ElseIf CStr(storedDate) <> CStr(lastModified) Then
+                    ' 前回日時と違えば更新あり（1）！
+                    ws.Cells(i, "E").Value = lastModified
+                    ws.Cells(i, "C").Value = 1
+                Else
+                    ' 更新なし（リセットされて空欄なら 0 にする。1なら維持）
+                    If currentStatus = "" Then ws.Cells(i, "C").Value = 0
+                End If
+            Else
+                ws.Cells(i, "C").Value = "エラー" ' パス間違い、またはネットワーク未接続
+            End If
+        End If
+    Next i
+    
+    ' オブジェクトの安全な解放
+    Set fso = Nothing
+    Set http = Nothing
+    MsgBox "すべての監視対象の更新チェックが完了しました！", vbInformation, "チェック完了"
+End Sub
+
+' --- 全体一括ステータスリセットマクロ ---
+Sub ResetAll()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("コントロールシート")
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    
+    If lastRow >= 2 Then
+        ' C列（ステータス）だけをすべて空欄に戻す
+        ws.Range("C2:C" & lastRow).ClearContents
+    End If
+    MsgBox "すべてのステータスをリセット（未記入）にしました。", vbInformation, "全体リセット"
+End Sub
+
+' --- コントロールシート自動レイアウト構築マクロ（新規追加・準備一発完了） ---
+Sub CreateControlSheet()
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("コントロールシート")
+    On Error GoTo 0
+    
+    If Not ws Is Nothing Then
+        If MsgBox("「コントロールシート」は既に存在します。上書きしますか？" & Chr(10) & _
+                  "※既存の入力データやパスはすべてリセットされます。", vbYesNo + vbExclamation, "シート作成確認") = vbNo Then Exit Sub
+        Application.DisplayAlerts = False
+        ws.Delete
+        Application.DisplayAlerts = True
+    End If
+    
+    ' 新規シート作成
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Sheets(1))
+    ws.Name = "コントロールシート"
+    
+    With ws
+        ' ヘッダーの書き込み
+        .Cells(1, 1).Value = "監視対象の名前"
+        .Cells(1, 2).Value = "URL または フォルダパス"
+        .Cells(1, 3).Value = "ステータス"
+        .Cells(1, 4).Value = "個別リセット（D列）"
+        .Cells(1, 5).Value = "前回更新日時"
+        
+        ' サンプルデータの書き込み
+        .Cells(2, 1).Value = "Googleトップページ （※動作確認用Web監視）"
+        .Cells(2, 2).Value = "https://www.google.com"
+        .Cells(2, 3).Value = ""
+        .Cells(2, 4).Value = "ダブルクリックでリセット"
+        
+        .Cells(3, 1).Value = "共有サーバ上のデータ （※ローカルパス監視例）"
+        .Cells(3, 2).Value = "C:\\shared\\sample.xlsx"
+        .Cells(3, 3).Value = ""
+        .Cells(3, 4).Value = "ダブルクリックでリセット"
+        
+        ' ヘッダースタイル調整
+        With .Range("A1:E1")
+            .Font.Bold = True
+            .Font.Color = RGB(255, 255, 255)
+            .Interior.Color = RGB(41, 128, 185) ' 美しいブルー
+            .HorizontalAlignment = xlCenter
+        End With
+        
+        ' 列幅の最適自動化
+        .Columns("A:E").AutoFit
+        .Columns("B").ColumnWidth = 55
+        .Columns("D").ColumnWidth = 25
+        .Columns("E").ColumnWidth = 22
+    End With
+    
+    MsgBox "「コントロールシート」を自動生成しました！" & Chr(10) & _
+           "B列に実際の監視対象パスを入力し、更新監視をスタートしてください。", vbInformation, "セットアップ完了"
+End Sub
+
+
+' ===========================================================
+' ② 【シートモジュール：コントロールシート】ダブルクリックでの個別リセット
+' ===========================================================
+' 「コントロールシート」のコードウィンドウに直接貼り付けてください。
+
+' --- 個別リセット（D列ダブルクリックイベント） ---
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    ' ダブルクリックされたのがD列（4列目）で、かつデータ行（2行目以降）の場合
+    If Target.Column = 4 And Target.Row >= 2 Then
+        Cancel = True ' 通常の文字入力編集モードへの遷移を遮断
+        Cells(Target.Row, "C").ClearContents ' 該当行のC列（ステータス）を即時クリア
+    End If
+End Sub`,
+    explanation: [
+      '【WebのHEAD通信による軽量監視】: `MSXML2.XMLHTTP` による "HEAD" リクエストを利用することで、Webページ全体をダウンロードせずにHTTPヘッダー情報（`Last-Modified`：最終更新日時）のみをピンポイントで取得、ローカルのチェック速度とネットワーク負荷を数百分の一に抑えます。',
+      '【FSOを用いたローカル・ネットワーク監視】: `FileSystemObject (FSO)` の `FileExists` / `GetFile().DateLastModified` を通して、Windowsエクスプローラーと同等の超低遅延でファイルのリアルタイムな最終上書き日付を取得します。',
+      '【ダブルクリックトリガーによる軽量個別リセット】: シートモジュールの `Worksheet_BeforeDoubleClick` イベントと `Target.Row` / `Target.Column` 指定を組み合わせることで、セル自体のダブルクリックを検知。行単位でコントロールするボタンを大量配置する必要がなくなり、何千行でも全く重くならない圧倒的な軽量シート性能を実現します。',
+      '【アイコン表示（条件付き書式）によるビジュアル化推奨】: ステータス列（C列）に書き出す 1 (更新あり) と 0 (変化なし) 等を、Excel標準の「条件付き書式 ＞ アイコンセット」で丸のみにチェックを入れるだけで、生の数値を非表示にしたまま直感的な緑／赤／黄色の丸ステータス信号をデザインできます。'
+    ]
+  },
+  {
     id: 'shared-data-sync',
     title: '【共有同期＆履歴】入荷状況・動的色判定＆差分更新履歴抽出システム',
     description: '「ControlBox」シートの設定情報をトリガーに、共有（ReadOnly）ブックから商品データとそのセル背景色（入荷状況）を取得。前回取得データとの自動差分比較から「新規追加」履歴をログシートにタイムスタンプ形式で追記し、「本日追加」されたものだけを別シートに瞬時に二次抽出する実務特化型システムです。',
