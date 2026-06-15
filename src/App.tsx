@@ -3,6 +3,7 @@ import { vbaSamples } from './data/vbaSamples';
 import { VbaCodeCard } from './components/VbaCodeCard';
 import { HtmlViewSection } from './components/HtmlViewSection';
 import { VbaLabSection } from './components/VbaLabSection';
+import { VbaPaletteSection } from './components/VbaPaletteSection';
 import { 
   Sparkles, 
   Search, 
@@ -18,12 +19,13 @@ import {
   Award, 
   ChevronRight, 
   Database,
-  Cpu
+  Cpu,
+  Layout
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState<'vba' | 'vba-lab' | 'html'>('vba');
+  const [activeSection, setActiveSection] = useState<'vba' | 'vba-lab' | 'html' | 'palette'>('vba');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
@@ -132,13 +134,13 @@ export default function App() {
           </div>
 
           {/* セクション切り替えタブ - 未来的なスイッチデザイン */}
-          <div className="flex items-center gap-1 bg-[#F5F2EC]/80 dark:bg-[#151515] p-1 rounded-xl select-none border border-stone-250/40 dark:border-stone-900/60 shadow-sm">
+          <div className="flex items-center gap-1 bg-[#F5F2EC]/80 dark:bg-[#151515] p-1 rounded-xl select-none border border-stone-250/40 dark:border-stone-900/60 shadow-sm overflow-x-auto max-w-full">
             <button
               onClick={() => {
                 setActiveSection('vba');
                 setSearchQuery('');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeSection === 'vba'
                   ? 'bg-[#FAF7F2] dark:bg-stone-850 text-stone-950 dark:text-white shadow-sm'
                   : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
@@ -152,7 +154,7 @@ export default function App() {
                 setActiveSection('vba-lab');
                 setSearchQuery('');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeSection === 'vba-lab'
                   ? 'bg-stone-950 text-white dark:bg-[#FAF7F2] dark:text-stone-950 shadow-sm font-black'
                   : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
@@ -163,10 +165,24 @@ export default function App() {
             </button>
             <button
               onClick={() => {
+                setActiveSection('palette');
+                setSearchQuery('');
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeSection === 'palette'
+                  ? 'bg-stone-950 text-white dark:bg-[#FAF7F2] dark:text-stone-950 shadow-sm font-black'
+                  : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
+              }`}
+            >
+              <Layout className="w-3.5 h-3.5" />
+              <span>VBAパレット</span>
+            </button>
+            <button
+              onClick={() => {
                 setActiveSection('html');
                 setSearchQuery('');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeSection === 'html'
                   ? 'bg-stone-950 text-white dark:bg-[#FAF7F2] dark:text-stone-950 shadow-sm font-black'
                   : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
@@ -265,6 +281,18 @@ export default function App() {
                   インタラクティブ自動診断 & 効果シミュレーター
                 </span>
               </h2>
+            ) : activeSection === 'palette' ? (
+              <h2 className="leading-tight max-w-4xl mx-auto select-none">
+                <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-stone-500 dark:text-stone-400 block mb-3">
+                  [ MULTI_FUNCTION_FLOATING_PALETTE ]
+                </span>
+                <span className="text-3xl sm:text-4xl md:text-5.5xl font-black tracking-tighter text-stone-950 dark:text-white font-display block leading-none">
+                  手のひらにカスタムツール
+                </span>
+                <span className="text-2xl sm:text-3xl md:text-4.2xl font-light tracking-tight text-stone-600 dark:text-stone-300 font-display block mt-1.5 font-sans">
+                  最前面で浮遊する、超高機能フローティングパレット VBA
+                </span>
+              </h2>
             ) : (
               <h2 className="leading-tight max-w-4xl mx-auto select-none">
                 <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-stone-500 dark:text-stone-400 block mb-3">
@@ -282,6 +310,7 @@ export default function App() {
             <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 max-w-2xl mx-auto leading-relaxed font-sans max-w-[65ch]">
               {activeSection === 'vba' && '非同期的な描画カット、厳密な型定義、安全なオブジェクト解放。企業の制約された環境でも、そのままコピペして最高のスピードを叩き出せるライブラリ。'}
               {activeSection === 'vba-lab' && '実際に自分のコードを評価し、ボトルネックを特定。さらにボタン一つでエラーに強いテンプレート自動生成、業務の劇的な時間・費用削減シミュレーションを行なえます。'}
+              {activeSection === 'palette' && 'モーダレスフォーム機能(UserForm)をフル活用。ドラッグ操作、動的な設定シートからのボタン展開、複数バグを完璧にケアした安心設計の一大モジュール一式。'}
               {activeSection === 'html' && 'サーバー連携、外部APIを一切必要としない究極のローカル駆動。完璧な親子ツリー、スマート開閉フォルダー、堅牢なJSONエクスポート機能をご体験ください。'}
             </p>
           </div>
@@ -525,6 +554,17 @@ export default function App() {
             transition={{ duration: 0.3 }}
           >
             <VbaLabSection />
+          </motion.div>
+        )}
+
+        {/* === SECTION 4: VBAパレット === */}
+        {activeSection === 'palette' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <VbaPaletteSection />
           </motion.div>
         )}
 
